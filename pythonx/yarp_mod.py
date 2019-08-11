@@ -7,7 +7,7 @@ else:
 
 import sys
 import importlib
-from os import environ
+import os
 
 assert __name__ == "__main__"
 
@@ -18,13 +18,26 @@ serveraddr = sys.argv[1]
 yarpid = int(sys.argv[2])
 module = sys.argv[3]
 module_obj = None
+module_path = None
+module_epoch = None
 nvim = None
 
-environ['NVIM_YARP_MODULE'] = module
+os.environ['NVIM_YARP_MODULE'] = module
 
 setup_logging(module)
 
+
+def reload():
+    try:
+        global module_epoch
+        if os.path.getctime(module_path) != module_epoch:
+            module_epoch = os.path.getctime(module_path)
+            importlib.reload(module_obj)
+    except Exception as e:
+        pass
+
 def on_request(method, args):
+    reload()
     if hasattr(module_obj, method):
         return getattr(module_obj, method)(*args)
     else:
@@ -32,6 +45,7 @@ def on_request(method, args):
 
 
 def on_notification(method, args):
+    reload()
     if hasattr(module_obj, method):
         getattr(module_obj, method)(*args)
     else:
@@ -63,6 +77,8 @@ try:
             sys.path.append(path)
 
     module_obj = importlib.import_module(module)
+    module_path = importlib.util.find_spec(module).origin
+    module_epoch = os.path.getctime(module_path)
 
     nvim.call('yarp#core#channel_started', yarpid, nvim.channel_id)
 

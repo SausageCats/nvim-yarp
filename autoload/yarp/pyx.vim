@@ -9,7 +9,7 @@ func! yarp#pyx#init() dict
     let exe = call(l:Detect, [], self)
 
     if get(s:, 'script', '') == ''
-        let s:script = globpath(&rtp,'pythonx/yarp.py',1)
+        let s:script = globpath(&rtp,'pythonx/yarp_mod.py',1)
     endif
 
     let self.cmd = [exe, 
